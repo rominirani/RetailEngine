@@ -79,11 +79,11 @@ String query = "SELECT\n" +
  "        CAST(literature AS VARCHAR(500)) LIKE '%MATCH:%YES%';";
    HikariDataSource dataSource = AlloyDbJdbcConnector();
    JsonArray jsonArray = new JsonArray(); // Create a JSON array
-try (Connection connection = dataSource.getConnection()) {
-     try (PreparedStatement statement = connection.prepareStatement(query)) {
-       ResultSet resultSet = statement.executeQuery();
+try (Connection connection = dataSource.getConnection();
+     PreparedStatement statement = connection.prepareStatement(query);
+     ResultSet resultSet = statement.executeQuery()) {
          while (resultSet.next()) { // Loop through all results
-                             JsonObject jsonObject = new JsonObject();
+                   JsonObject jsonObject = new JsonObject();
                    jsonObject.addProperty("id", resultSet.getString("id"));
                    jsonObject.addProperty("category", resultSet.getString("category"));
                    jsonObject.addProperty("sub_category", resultSet.getString("sub_category"));
@@ -93,11 +93,15 @@ try (Connection connection = dataSource.getConnection()) {
                    jsonArray.add(jsonObject);
         }
      }
+     catch (SQLException e) {
+        // Log the exception and return an appropriate error response
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // Or a more specific error code
+        writer.write("{\"error\": \"" + e.getMessage() + "\"}"); //Send an error JSON
+        e.printStackTrace(); //For debugging purposes remove in production.
+     }
       // Set the response content type and write the JSON array
-           response.setContentType("application/json");
-           writer.write(jsonArray.toString());
-   
-    }
+      response.setContentType("application/json");
+      writer.write(jsonArray.toString());
  }
  public  HikariDataSource AlloyDbJdbcConnector() {
   HikariDataSource dataSource;
@@ -111,6 +115,9 @@ try (Connection connection = dataSource.getConnection()) {
    config.setPassword(ALLOYDB_PASS); // e.g., "secret-password"
    config.addDataSourceProperty("socketFactory", "com.google.cloud.alloydb.SocketFactory");
    config.addDataSourceProperty("alloydbInstanceName", ALLOYDB_INSTANCE_NAME);
+   config.addDataSourceProperty("tcpKeepAlive",true);
+   config.addDataSourceProperty("maximumPoolSize",50);
+   config.addDataSourceProperty("maxLifetime",1800000);
    dataSource = new HikariDataSource(config);
    return dataSource;
 }

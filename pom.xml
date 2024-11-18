@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>com.zaxxer</groupId>
 			<artifactId>HikariCP</artifactId>
-			<version>4.0.3</version>
+			<version>6.2.0</version>
 		</dependency>
 		<!-- Add the connector with the latest version -->
 		<dependency>
